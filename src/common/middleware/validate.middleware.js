@@ -1,12 +1,10 @@
 import ApiError from "../utils/api-error.js";
-import BaseDto from "../dto/base-dto.js";
- 
 
 const validate = (Dtoclass) => {
-    return (req, res, next)=> {
+    return (req, res, next) => {
         const { errors, value } = Dtoclass.validate(req.body);
 
-        if(errors){
+        if (errors) {
             throw ApiError.badRequest(errors.join(";"));
         }
 
