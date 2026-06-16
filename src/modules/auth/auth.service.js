@@ -1,13 +1,93 @@
 import ApiError from "../../common/utils/api-error.js";
+import { generateAccessToken, generateToken, varifiRefreshToken } from "../../common/utils/jwt-utils.js";
 import User from "./auth.schema.js";
 
-const register = async ({ name, email, password, role }) => {
-    const exsist = await User.findOne({email});
-    
-    if(exsist) throw ApiError.conflict("User already exists");
 
+const hashToken = async token => crypto.createHash("sha256").update(token).digest("hex");
+
+const register = async ({ name, email, password, role }) => {
+    const exsist = await User.findOne({ email });
+    if (exsist) throw ApiError.conflict("User already exists");
+
+    const { rowTocken, hashedToken } = generateToken();
+    const user = await User.create({
+        name,
+        email,
+        password,
+        role,
+        varificationToken: hashedToken
+    })
+
+    //TODO send an email to user with token : rowToken
+
+    const userObj = user.toObject();
+    delete userObj.password;
+    delete userObj.varificationToken;
 
     return userObj;
+}
+
+const login = async ({ email, password }) => {
+    //* take email and find user in DB
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) throw ApiError.unauthorized("Invalid email or password");
+
+    //* then chaeck the password is correct 
+
+
+    //* check if varified or not 
+    if (!user.isVerified) throw ApiError.forbidden("User is not verified");
+
+    //* generate Tokens
+    const accessToken = generateAccessToken({ id: user._id, email: user.email, role: user.role });
+    const refreshToken = generatRefreshToken({ id: user._id });
+
+    //* hashed refreshToken
+    user.refreshToken = hashToken(refreshToken);
+    await user.save({ validateBeforeSave: false });
+
+    //* remove some fields from the user data
+    const userObj = user.toObject();
+    delete userObj.password;
+    delete userObj.refreshToken;
+
+    //* return user and tokens
+    return { user: userObj, accessToken, refreshToken };
+}
+
+const refresh = async ({ token }) => {
+
+    //! check token recieve or nor 
+    if (!token) throw ApiError.unauthorized("Token is required");
+
+    //* varifi refresh token
+    const varifiedToken = varifiRefreshToken(token);
+    if (!varifiedToken) throw ApiError.unauthorized("Invalid token");
+
+    //* find user 
+    const user = await User.findById(varifiedToken.id).$elect('+refreshToken');
+    if (!user) throw ApiError.unauthorized("User not found");
+
+    //! check refreshtoken is valid or not
+    const hashedToken = await hashToken(token);
+    if (user.refreshToken !== hashedToken) throw ApiError.unauthorized("Invalid refresh token");
+
+    //* generate new tokens
+    const accessToken = generateAccessToken({ id: user._id, email: user.email, role: user.role });
+    const refreshToken = generatRefreshToken({ id: user._id });
+
+    await User.updateOne({ refreshToken: hashToken(refreshToken) });
+
+    //* remove some fields from the user data
+    const userObj = toObject(user);
+    delete userObj.password;
+    delete userObj.refreshToken;
+
+    return { user: userObj, accessToken, refreshToken };
+}
+
+const logout = async (userId)=>{
+ await User.findByIdAndUpdate(userId, { refreshToken: null});
 }
 
 export { register };
