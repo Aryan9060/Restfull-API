@@ -90,4 +90,18 @@ const logout = async (userId)=>{
  await User.findByIdAndUpdate(userId, { refreshToken: null});
 }
 
-export { register };
+const forgotPassword = async (email) => {
+    const user = await User.findOne({email})
+    if(!user) throw ApiError.notFound("User not found");
+
+    const { rowTocken, hashedToken } = generateToken();
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+
+    await user.save();
+
+    //TODO send an email to user with token : rowToken
+
+}
+
+export { register }; 
