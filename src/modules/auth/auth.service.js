@@ -33,6 +33,8 @@ const login = async ({ email, password }) => {
     if (!user) throw ApiError.unauthorized("Invalid email or password");
 
     //* then chaeck the password is correct 
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) throw ApiError.unauthorized("Invalid email or password");
 
 
     //* check if varified or not 
@@ -53,6 +55,12 @@ const login = async ({ email, password }) => {
 
     //* return user and tokens
     return { user: userObj, accessToken, refreshToken };
+}
+
+const getMe = async (userId) => {
+    const user = await User.findById(userId);
+    if (!user) throw ApiError.notFound("User not found");
+    return user;
 }
 
 const refresh = async ({ token }) => {
@@ -104,4 +112,4 @@ const forgotPassword = async (email) => {
 
 }
 
-export { register }; 
+export { register, login, refresh, logout, forgotPassword}; 

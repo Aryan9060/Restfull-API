@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
         maxlength: 50,
         required: [true, "Name is required"]
     },
-    
+
     email: {
         type: String,
         trim: true,
@@ -58,5 +58,17 @@ const userSchema = new mongoose.Schema({
     }
 
 }, { timestamps: true })
+
+
+userSchema.pre('save', async function () {
+    if (!this.isModified("password")) return ;
+    this.password = await bcrypt.hash(this.password, 12);
+})
+
+
+userSchema.methods.comparePassword = async function (password) {
+    return await bcrypt.compare(password, this.password);
+}
+
 
 export default mongoose.model("User", userSchema);
