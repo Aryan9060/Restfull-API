@@ -1,4 +1,4 @@
-import * as authService from "./auth.service";
+import * as authService from "./auth.service.js";
 import ApiResponse from "../../common/utils/api-response.js";
 
 const register = async (req, res) => {
@@ -51,5 +51,20 @@ const refresh = async (req, res) => {
 
 };
 
-export { register, login, getMe, refresh, logout };
+const varifyEmail = async (req, res) => {
+    const user = await authService.varifyEmail(req.params.token);
+    ApiResponse.ok(res, "Email verified successfully", user);
+};
+
+const forgotPassword = async (req, res) => {
+    await authService.forgotPassword(req.body.email);
+    ApiResponse.ok(res, "Password reset email sent");
+};
+
+const resetPassword = async (req, res) => {
+    await authService.resetPassword(req.params.token, req.body.password);
+    ApiResponse.ok(res, "Password reset successful");
+};
+
+export { register, login, logout, getMe, refresh, varifyEmail, forgotPassword, resetPassword };
 

@@ -1,6 +1,6 @@
-import User from "../src\modules\auth\auth.schema.js";
-import ApiError from "../common/utils/api-error.js";
-import { varifiAccessToken } from "../../common/utils/jwt-utils";
+import User from "./auth.schema.js";
+import ApiError from "../../common/utils/api-error.js";
+import { varifiAccessToken } from "../../common/utils/jwt-utils.js";
 
 const authenticate = async (req, res, next) => {
 

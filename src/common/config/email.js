@@ -1,33 +1,43 @@
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-    host: "smtp.example.com",
-    port: 587,
-    secure: false, // use STARTTLS (upgrade connection to TLS after connecting)
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT)||587,
+    // secure: false, // use STARTTLS (upgrade connection to TLS after connecting)
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
     },
 });
 
-const sendEmail = async (to, subject, text, html) => {
+const sendEmail = async (to, subject, html) => {
     await transporter.sendMail({
-        from: process.env.SMTP_USER,
+        from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
         to,
         subject,
-        text,
-        html
-    })
-}
-const varificationEmail = async (email, subject, token, html) => {
-    await transporter.sendMail({
-        from: process.env.SMTP_USER,
-        to: email,
-        subject,
-        text:token,
         html
     })
 }
 
+const sendVerificationEmail = async (email, token) => {
+  const url = `${process.env.CLIENT_URL}/verify-email/${token}`;
+  await sendEmail(
+    email,
+    "Verify your email",
+    `<h2>Welcome!</h2>
+    <p>Click <a href="${url}">here</a> to verify your email.</p>`,
+  );
+};
 
-export { sendEmail, varificationEmail };
+const sendResetPasswordEmail = async (email, token) => {
+  const url = `${process.env.CLIENT_URL}/reset-password/${token}`;
+  await sendEmail(
+    email,
+    "Reset your password",
+    `<h2>Password Reset</h2>
+    <p>Click <a href="${url}">here</a> to reset your password. This link expires in 15 minutes.</p>`,
+  );
+};
+
+
+export { sendEmail, sendVerificationEmail, sendResetPasswordEmail};
